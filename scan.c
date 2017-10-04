@@ -23,6 +23,9 @@
 // you could figure the smallest value that it could take without underflow then only test in the larger portion
 // might be better for huge numbers 
 
+// checking on each iteration of the loop, maybe we should change this to the minimum value 
+// NOTES: OPTIMIZATION!!!!
+
 int8_t
 parse_next_int8_t(char *start, char *end)
 {
@@ -59,51 +62,173 @@ parse_next_int8_t(char *start, char *end)
 int16_t
 parse_next_int16_t(char *start, char *end)
 {
+	int32_t sum = 0;
+	int32_t addend = 0;
+	int32_t scale = 1;
+	int32_t value = 0;
 
+	while (end >= start)
+	{
+		addend = (*end - '0') * scale;
+		sum += addend;
+
+		value = (int16_t)sum;
+		if (value > sum)
+		{
+			fprintf(stderr, "Integer underflow detected\n");
+			break;
+		}
+		if (value < sum)
+		{
+			fprintf(stderr, "Integer overflow detected\n");
+			break;
+		}
+
+		--end;
+		scale *= 10;
+	}
+
+	return value;
 }
 
 int32_t
 parse_next_int32_t(char *start, char *end)
 {
+	int64_t sum = 0;
+	int64_t addend = 0;
+	int64_t scale = 1;
+	int64_t value = 0;
 
+	while (end >= start)
+	{
+		addend = (*end - '0') * scale;
+		sum += addend;
+		
+		if (value > sum)
+		{
+			fprintf(stderr, "Integer overflow detected\n");
+			break;
+		}
+		if (value < sum)
+		{
+			fprintf(stderr, "Integer underflow detected\n");
+			break;
+		}
+		
+		--end;
+		scale *= 10;
+	}
+
+	return value;
 }
+
+//
+// NOTE: This strategy for underflow or overflow detection won't work 
+// BULLETPROOF!!!!
+//
 
 int64_t
 parse_next_int64_t(char *start, char *end)
 {
+	// DON'T USE!!!
 }
 
 uint8_t
 parse_next_uint8_t(char *start, char *end)
 {
+	uint16_t sum = 0;
+	uint16_t addend = 0;
+	uint16_t scale = 1;
+	uint8_t value = 0;
 
+	while (end >= start)
+	{
+		addend = (*end - '0') * scale;
+		sum += addend;
+
+		if (value < sum)
+		{
+			fprintf(stderr, "Integer underflow detected\n");
+			break;
+		}
+
+		--end;
+		scale *= 10;
+	}
+
+	return value;
 
 }
 
 uint16_t
 parse_next_uint16_t(char *start, char *end)
 {
+	uint32_t sum = 0;
+	uint32_t addend = 0;
+	uint32_t scale = 1;
+	uint16_t value = 0;
 
+	while (end >= start)
+	{
+		addend = (*end - '0') * scale;
+		sum += addend;
+
+		if (value < sum)
+		{
+			fprintf(stderr, "Integer underflow detected\n");
+			break;
+		}
+
+		--end;
+		scale *= 10;
+	}
+
+	return value;
 }
 
 uint32_t
 parse_next_uint32_t(char *start, char *end)
 {
+	uint64_t sum = 0;
+	uint64_t addend = 0;
+	uint64_t scale = 1;
+	uint32_t value = 0;
 
+	while (end >= start)
+	{
+		addend = (*end - '0') * scale;
+		sum += addend;
+
+		if (value < sum)
+		{
+			fprintf(stderr, "Integer underflow detected\n");
+			break;
+		}
+
+		--end;
+		scale *= 10;
+	}
+
+	return value;
 }
+
+//
+// Need to handle this case, can't use the downcasting method to check for overflow/underflow
+// BULLETPROOF this
+//
 
 uint64_t
 parse_next_uint64_t(char *start, char *end)
 {
-
+	// DON'T use!
+	return 1; 
 }
-
 
 
 int
 scan(char *source, char *format_string, ...)
 {
-	#define MAX_FORMAT_SPECIFIER_SIZE 5
+#define MAX_FORMAT_SPECIFIER_SIZE 5
 	// don't need the static trick here, because we parse the string in a single pass
 	// walk the format string looking for the first format specifier
 	// once we find it we dispatch to the function call we are looking for
@@ -167,7 +292,7 @@ scan(char *source, char *format_string, ...)
 		{
 			++substring_end;
 		}
-		--substring_end; 
+		--substring_end;
 
 		//
 		// `substring_end` is one past the end of the substring so we decrement by 1
@@ -176,39 +301,38 @@ scan(char *source, char *format_string, ...)
 		//
 
 
-
 		//  parse the actual string we were passed in
 		if (strcmp(format_specifier, "i8") == 0)
 		{
-			*(va_arg(args, int8_t *)) = parse_next_int8_t(substring_start, substring_end );
+			*(va_arg(args, int8_t *)) = parse_next_int8_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "i16") == 0)
 		{
-			*(va_arg(args, int16_t *)) = parse_next_int16_t( substring_start, substring_end );
+			*(va_arg(args, int16_t *)) = parse_next_int16_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "i32") == 0)
 		{
-			*(va_arg(args, int32_t *)) = parse_next_int32_t( substring_start, substring_end );
+			*(va_arg(args, int32_t *)) = parse_next_int32_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "i64") == 0)
 		{
-			*(va_arg(args, int64_t *)) = parse_next_int64_t( substring_start, substring_end );
+			*(va_arg(args, int64_t *)) = parse_next_int64_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "u8") == 0)
 		{
-			*(va_arg(args, uint8_t *)) = parse_next_uint8_t( substring_start, substring_end );
+			*(va_arg(args, uint8_t *)) = parse_next_uint8_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "u16") == 0)
 		{
-			*(va_arg(args, uint16_t *)) = parse_next_uint16_t( substring_start, substring_end );
+			*(va_arg(args, uint16_t *)) = parse_next_uint16_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "u32") == 0)
 		{
-			*(va_arg(args, uint32_t *)) = parse_next_uint32_t( substring_start, substring_end );
+			*(va_arg(args, uint32_t *)) = parse_next_uint32_t(substring_start, substring_end);
 		}
 		else if (strcmp(format_specifier, "u64") == 0)
 		{
-			*(va_arg(args, uint64_t *)) = parse_next_uint64_t( substring_start, substring_end );
+			*(va_arg(args, uint64_t *)) = parse_next_uint64_t(substring_start, substring_end);
 		}
 
 		++successful_conversions;
@@ -219,9 +343,10 @@ scan(char *source, char *format_string, ...)
 	return successful_conversions;
 }
 
-
-
-
+// 
+// These were test functions for varargs...
+// 
+#if 0
 
 int
 sum(int count, ...)
@@ -268,12 +393,19 @@ function2(int count, ...)
 	return;
 }
 
+#endif
+
 int
 main(int argc, char **argv)
 {
-	scan("Hello World", "%s32 %u32 %s16 %s8");
+	int value1;
+	int value2;
+	int value3;
+
+	scan("1 2 3", "%i32 %i32 %i32", &value1, &value2, &value3);
+
+	fprintf(stdout, "%d %d %d\n", value1, value2, value3);
 
 	return 0;
 }
-
 
